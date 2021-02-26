@@ -28,6 +28,8 @@
                     <local:PercentageControl LabelText="{Binding Code}"  
                                              LabelTooltip="{Binding Description}"
                                              Percentage="{Binding Percentage}"
+                                             HighConfidenceThreshold=".6666"
+                                             MediumConfidenceThreshold=".3333"
                                              HorizontalAlignment="Right"
                                              Margin="4"/>
                 </DataTemplate>
