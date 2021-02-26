@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Percentage"
         mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance Type=local:ViewModel, IsDesignTimeCreatable=True}"
         Title="MainWindow" Height="450" Width="800">
     <Grid>
         <Grid.ColumnDefinitions>
@@ -13,10 +14,25 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <TextBlock Text="User Controls" FontSize="36" />
-        <StackPanel Orientation="Vertical" Grid.Row="1">
-            
-        </StackPanel>
+        <ItemsControl Grid.Row="1" ItemsSource="{Binding Stocks}" Name="itemsCtrl">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <StackPanel Orientation="Vertical"/>
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <local:PercentageControl LabelText="{Binding Code}"  
+                                             LabelTooltip="{Binding Description}"
+                                             Percentage="{Binding Percentage}"
+                                             HorizontalAlignment="Right"
+                                             Margin="4"/>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
     </Grid>
 </Window>
