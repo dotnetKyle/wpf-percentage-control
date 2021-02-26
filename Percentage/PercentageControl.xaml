@@ -1,0 +1,39 @@
+﻿<UserControl x:Class="Percentage.PercentageControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:Percentage"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance Type=local:PercentageControl, IsDesignTimeCreatable=True}">
+    <UserControl.Resources>
+        <Style TargetType="TextBlock">
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="Foreground" Value="{Binding ForegroundColor}"/>
+        </Style>
+        <Style TargetType="Border">
+            <Setter Property="BorderBrush" Value="Black"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Padding" Value="2"/>
+            <Setter Property="CornerRadius" Value="0,5,5,0"/>
+            <Setter Property="Background" Value="{Binding BackgroundColor}"/>
+        </Style>
+        <Style TargetType="Label">
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="HorizontalAlignment" Value="Right"/>
+            <Setter Property="Padding" Value="3,0"/>
+        </Style>
+    </UserControl.Resources>
+    <Grid x:Name="grdControl">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition/>
+            <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
+        <Label Content="{Binding LabelText}" ToolTip="{Binding LabelTooltip}" Grid.Column="0" />
+        <Border Grid.Column="1">
+            <TextBlock Text="{Binding PercentageString}" />
+        </Border>
+    </Grid>
+</UserControl>
