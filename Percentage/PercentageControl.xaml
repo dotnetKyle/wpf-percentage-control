@@ -4,36 +4,38 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:Percentage"
-             mc:Ignorable="d"
-             d:DataContext="{d:DesignInstance Type=local:PercentageControl, IsDesignTimeCreatable=True}">
-    <UserControl.Resources>
-        <Style TargetType="TextBlock">
-            <Setter Property="VerticalAlignment" Value="Center"/>
-            <Setter Property="HorizontalAlignment" Value="Center"/>
-            <Setter Property="Foreground" Value="{Binding ForegroundColor}"/>
-        </Style>
-        <Style TargetType="Border">
-            <Setter Property="BorderBrush" Value="Black"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="VerticalAlignment" Value="Center"/>
-            <Setter Property="Padding" Value="2"/>
-            <Setter Property="CornerRadius" Value="0,5,5,0"/>
-            <Setter Property="Background" Value="{Binding BackgroundColor}"/>
-        </Style>
-        <Style TargetType="Label">
-            <Setter Property="VerticalAlignment" Value="Center"/>
-            <Setter Property="HorizontalAlignment" Value="Right"/>
-            <Setter Property="Padding" Value="3,0"/>
-        </Style>
-    </UserControl.Resources>
-    <Grid x:Name="grdControl">
+             mc:Ignorable="d">
+    <UserControl.Resources></UserControl.Resources>
+    <Grid x:Name="grdControl" 
+          d:DataContext="{d:DesignInstance Type=local:PercentageControl, IsDesignTimeCreatable=False}">
+        <Grid.Resources>
+            <Style TargetType="TextBlock" x:Key="percent">
+                <Setter Property="VerticalAlignment" Value="Center"/>
+                <Setter Property="HorizontalAlignment" Value="Center"/>
+                <Setter Property="Foreground" Value="{Binding PercentageForeground}"/>
+                <Setter Property="MinWidth" Value="40"/>
+            </Style>
+            <Style TargetType="Border" x:Key="percentBorder">
+                <Setter Property="BorderBrush" Value="Black"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+                <Setter Property="Padding" Value="2"/>
+                <Setter Property="CornerRadius" Value="0,5,5,0"/>
+                <Setter Property="Background" Value="{Binding PercentageBackground}"/>
+            </Style>
+            <Style TargetType="Label" x:Key="label">
+                <Setter Property="VerticalAlignment" Value="Center"/>
+                <Setter Property="HorizontalAlignment" Value="Right"/>
+                <Setter Property="Padding" Value="3,0"/>
+            </Style>
+        </Grid.Resources>
         <Grid.ColumnDefinitions>
             <ColumnDefinition/>
             <ColumnDefinition/>
         </Grid.ColumnDefinitions>
-        <Label Content="{Binding LabelText}" ToolTip="{Binding LabelTooltip}" Grid.Column="0" />
-        <Border Grid.Column="1">
-            <TextBlock Text="{Binding PercentageString}" />
+        <Label Content="{Binding LabelText}" ToolTip="{Binding LabelTooltip}" Grid.Column="0" Style="{StaticResource label}" />
+        <Border Grid.Column="1" Style="{StaticResource percentBorder}">
+            <TextBlock Text="{Binding Path=PercentageLabel}" Style="{StaticResource percent}" />
         </Border>
     </Grid>
 </UserControl>

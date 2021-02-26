@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
@@ -9,199 +10,291 @@ namespace Percentage
     /// <summary>
     /// Interaction logic for PercentageControl.xaml
     /// </summary>
-    public partial class PercentageControl : UserControl, INotifyPropertyChanged
+    public partial class PercentageControl : UserControl
     {
+        static readonly Color defaultLowConfidenceBG = Color.FromRgb(255,150,150);
+        static readonly Color defaultMedConfidenceBG = Color.FromRgb(255,255,150);
+        static readonly Color defaultHighConfidenceBG = Color.FromRgb(150,255,200);
+
         public PercentageControl()
         {
             InitializeComponent();
+
+            // set the first child control (in this case grdControl) to be the DataContext holder (not the UserControl) 
+            // this.DataContext MUST inherit the parent control's datacontext
             grdControl.DataContext = this;
         }
 
+        #region DP LabelTooltip
         public string LabelTooltip
         {
             get { return (string)GetValue(LabelTooltipProperty); }
             set { SetValue(LabelTooltipProperty, value); }
         }
         public static readonly DependencyProperty LabelTooltipProperty =
-            DependencyProperty.Register("LabelTooltip", typeof(string), typeof(PercentageControl), new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault));
+            DependencyProperty.Register(nameof(LabelTooltip), typeof(string), typeof(PercentageControl), 
+                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault));
+        #endregion
 
+        #region DP LabelText
+        // TODO: Change this to a content so the user can do a better label
         public string LabelText
         {
             get { return (string)GetValue(LabelTextProperty); }
             set { SetValue(LabelTextProperty, value); }
         }
         public static readonly DependencyProperty LabelTextProperty =
-            DependencyProperty.Register("LabelText", typeof(string), typeof(PercentageControl), new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault));
+            DependencyProperty.Register(nameof(LabelText), typeof(string), typeof(PercentageControl), 
+                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault));
+        #endregion
 
+        #region DP Percentage
         public double Percentage
         {
-            get 
-            { 
-                var val = (double)GetValue(PercentageProperty);
-                System.Diagnostics.Debug.WriteLine($"val returned:{val}");
-                return val;
-            }
-            set 
-            {
-                System.Diagnostics.Debug.Write($"PercentageItem updating to {value:P}");
-                SetValue(PercentageProperty, value);
-                OnPropertyChanged(nameof(PercentageString));
-                OnPropertyChanged(nameof(BackgroundColor));
-                OnPropertyChanged(nameof(ForegroundColor));
-                System.Diagnostics.Debug.WriteLine($"...updated");
-            }
+            get => (double)GetValue(PercentageProperty);
+            set => SetValue(PercentageProperty, value);
         }
-
         public static readonly DependencyProperty PercentageProperty =
             DependencyProperty.Register("Percentage", typeof(double), typeof(PercentageControl),
-                new FrameworkPropertyMetadata(0.0, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault));
-
-        public string PercentageString
+                new FrameworkPropertyMetadata(0.0, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, 
+                    new PropertyChangedCallback(PercentPropertyChanged)
+                    ));
+        public static void PercentPropertyChanged(DependencyObject o, DependencyPropertyChangedEventArgs args)
         {
-            get
-            {
-                return Percentage.ToString("P");
-            }
+            // when this property is changed, it's value effects other properties
+            o.SetValue(PercentageProperty, args.NewValue);
+            // must set the values for all the read only percentage properties when this changes
+            SetPercentageLabelValue(o);
+            SetPercentageBackground(o); 
+            SetPercentageForeground(o);
         }
+        #endregion
 
         #region Confidence Thresholds
 
+        #region DP High Confidence Threshhold
         public double HighConfidenceThreshold
         {
-            get { return (double)GetValue(HighConfidenceThresholdProperty); }
-            set 
-            { 
-                SetValue(HighConfidenceThresholdProperty, value);
-                OnPropertyChanged(nameof(BackgroundColor));
-                OnPropertyChanged(nameof(ForegroundColor));
-            }
+            get => (double)GetValue(HighConfidenceThresholdProperty);
+            set => SetValue(HighConfidenceThresholdProperty, value);
         }
         public static readonly DependencyProperty HighConfidenceThresholdProperty =
-            DependencyProperty.Register("HighConfidenceThreshold", typeof(double), typeof(PercentageControl), new PropertyMetadata(.9));
+            DependencyProperty.Register(nameof(HighConfidenceThreshold), typeof(double), typeof(PercentageControl), 
+                new PropertyMetadata(.9, new PropertyChangedCallback(HighConfThresholdPropertyChanged))); 
+        static void HighConfThresholdPropertyChanged(DependencyObject o, DependencyPropertyChangedEventArgs args)
+        {
+            o.SetValue(HighConfidenceThresholdProperty, args.NewValue);
+            SetPercentageBackground(o);
+            SetPercentageForeground(o);
+        }
+
+        #endregion
+
+        #region DP Med Confidence Threshhold
 
         public double MediumConfidenceThreshold
         {
-            get { return (double)GetValue(MediumConfidenceThresholdProperty); }
-            set 
-            { 
-                SetValue(MediumConfidenceThresholdProperty, value);
-                OnPropertyChanged(nameof(BackgroundColor));
-                OnPropertyChanged(nameof(ForegroundColor));
-            }
+            get => (double)GetValue(MediumConfidenceThresholdProperty);
+            set => SetValue(MediumConfidenceThresholdProperty, value);
         }
         public static readonly DependencyProperty MediumConfidenceThresholdProperty =
-            DependencyProperty.Register("MediumConfidenceThreshold", typeof(double), typeof(PercentageControl), new PropertyMetadata(.75));
+            DependencyProperty.Register(nameof(MediumConfidenceThreshold), typeof(double), typeof(PercentageControl), 
+                new PropertyMetadata(.75, new PropertyChangedCallback(MedConfThresholdPropertyChanged)));
+        static void MedConfThresholdPropertyChanged(DependencyObject o, DependencyPropertyChangedEventArgs args)
+        {
+            o.SetValue(MediumConfidenceThresholdProperty, args.NewValue);
+            SetPercentageBackground(o);
+            SetPercentageForeground(o);
+        }
+        #endregion
 
         #endregion
 
         #region Confidence Background Colors
 
-        public Brush HighConfidenceColor
+        public Brush HighConfidenceBackground
         {
-            get { return (Brush)GetValue(HighConfidenceColorProperty); }
-            set 
-            { 
-                SetValue(HighConfidenceColorProperty, value);
-                OnPropertyChanged(nameof(BackgroundColor));
-            }
-        }
-        public static readonly DependencyProperty HighConfidenceColorProperty =
-            DependencyProperty.Register("HighConfidenceColor", typeof(Brush), typeof(PercentageControl), new PropertyMetadata(Brushes.Green));
-        public Brush MediumConfidenceColor
-        {
-            get { return (Brush)GetValue(MediumConfidenceColorProperty); }
-            set 
-            { 
-                SetValue(MediumConfidenceColorProperty, value);
-                OnPropertyChanged(nameof(BackgroundColor));
-            }
-        }
-        public static readonly DependencyProperty MediumConfidenceColorProperty =
-            DependencyProperty.Register("MediumConfidenceColor", typeof(Brush), typeof(PercentageControl), new PropertyMetadata(Brushes.Yellow));
-        public Brush LowConfidenceColor
-        {
-            get { return (Brush)GetValue(LowConfidenceColorProperty); }
-            set 
-            { 
-                SetValue(LowConfidenceColorProperty, value);
-                OnPropertyChanged(nameof(BackgroundColor));
-            }
-        }
-        public static readonly DependencyProperty LowConfidenceColorProperty =
-            DependencyProperty.Register("LowConfidenceColor", typeof(Brush), typeof(PercentageControl), new PropertyMetadata(Brushes.Red));
-        public Brush BackgroundColor
-        {
-            get
+            get => (Brush)GetValue(HighConfidenceBackgroundProperty);
+            set
             {
-                if (Percentage >= HighConfidenceThreshold)
-                    return HighConfidenceColor;
-                else if (Percentage >= MediumConfidenceThreshold)
-                    return MediumConfidenceColor;
-                else
-                    return LowConfidenceColor;
+                SetValue(HighConfidenceBackgroundProperty, value);
+                SetPercentageBackground(this);
             }
+        }
+        public static readonly DependencyProperty HighConfidenceBackgroundProperty =
+            DependencyProperty.Register(nameof(HighConfidenceBackground), typeof(Brush), typeof(PercentageControl), 
+                new PropertyMetadata(new SolidColorBrush(defaultHighConfidenceBG), new PropertyChangedCallback(HighConfidenceBackgroundPropertyChanged)));
+        static void HighConfidenceBackgroundPropertyChanged(DependencyObject o, DependencyPropertyChangedEventArgs args)
+        {
+            o.SetValue(HighConfidenceBackgroundProperty, args.NewValue);
+            SetPercentageBackground(o);
+        }
+
+
+        public Brush MediumConfidenceBackground
+        {
+            get => (Brush)GetValue(MediumConfidenceBackgroundProperty);
+            set 
+            { 
+                SetValue(MediumConfidenceBackgroundProperty, value);
+                SetPercentageBackground(this);
+            }            
+        }
+        public static readonly DependencyProperty MediumConfidenceBackgroundProperty =
+            DependencyProperty.Register(nameof(MediumConfidenceBackground), typeof(Brush), typeof(PercentageControl), 
+                new PropertyMetadata(new SolidColorBrush(defaultMedConfidenceBG), new PropertyChangedCallback(MediumConfidenceBackgroundPropertyChanged)));
+        static void MediumConfidenceBackgroundPropertyChanged(DependencyObject o, DependencyPropertyChangedEventArgs args)
+        {
+            o.SetValue(MediumConfidenceBackgroundProperty, args.NewValue);
+            SetPercentageBackground(o);
+        }
+
+        public Brush LowConfidenceBackground
+        {
+            get => (Brush)GetValue(LowConfidenceBackgroundProperty);
+            set
+            {
+                SetValue(LowConfidenceBackgroundProperty, value);
+                SetPercentageBackground(this);
+            }
+        }
+        public static readonly DependencyProperty LowConfidenceBackgroundProperty =
+            DependencyProperty.Register(nameof(LowConfidenceBackground), typeof(Brush), typeof(PercentageControl), 
+                new PropertyMetadata(new SolidColorBrush(defaultLowConfidenceBG), new PropertyChangedCallback(LowConfidenceBackgroundPropertyChanged)));
+        static void LowConfidenceBackgroundPropertyChanged(DependencyObject o, DependencyPropertyChangedEventArgs args)
+        {
+            o.SetValue(LowConfidenceBackgroundProperty, args.NewValue);
+            SetPercentageBackground(o);
         }
 
         #endregion
 
         #region Confidence Text Colors
 
-        public Brush HighConfidenceTextColor
+        #region DP TextColor High Confidence
+
+        public Brush HighConfidenceForeground
         {
-            get { return (Brush)GetValue(HighConfidenceColorTextProperty); }
-            set 
-            { 
-                SetValue(HighConfidenceColorTextProperty, value);
-                OnPropertyChanged(nameof(ForegroundColor));
-            }
+            get => (Brush)GetValue(HighConfidenceForegroundProperty);
+            set => SetValue(HighConfidenceForegroundProperty, value);
         }
-        public static readonly DependencyProperty HighConfidenceColorTextProperty =
-            DependencyProperty.Register("HighConfidenceTextColor", typeof(Brush), typeof(PercentageControl), new PropertyMetadata(Brushes.White));
-        public Brush MediumConfidenceTextColor
+        public static readonly DependencyProperty HighConfidenceForegroundProperty =
+            DependencyProperty.Register(nameof(HighConfidenceForeground), typeof(Brush), typeof(PercentageControl), 
+                new PropertyMetadata(Brushes.Black, new PropertyChangedCallback(HighConfidenceForegroundPropertyChanged)));
+        static void HighConfidenceForegroundPropertyChanged(DependencyObject o, DependencyPropertyChangedEventArgs args)
         {
-            get { return (Brush)GetValue(MediumConfidenceColorTextProperty); }
-            set 
-            { 
-                SetValue(MediumConfidenceColorTextProperty, value);
-                OnPropertyChanged(nameof(ForegroundColor));
-            }
-        }
-        public static readonly DependencyProperty MediumConfidenceColorTextProperty =
-            DependencyProperty.Register("MediumConfidenceTextColor", typeof(Brush), typeof(PercentageControl), new PropertyMetadata(Brushes.Black));
-        public Brush LowConfidenceTextColor
-        {
-            get { return (Brush)GetValue(LowConfidenceColorTextProperty); }
-            set 
-            { 
-                SetValue(LowConfidenceColorTextProperty, value);
-                OnPropertyChanged(nameof(ForegroundColor));
-            }
-        }
-        public static readonly DependencyProperty LowConfidenceColorTextProperty =
-            DependencyProperty.Register("LowConfidenceTextColor", typeof(Brush), typeof(PercentageControl), new PropertyMetadata(Brushes.Black));
-        public Brush ForegroundColor
-        {
-            get
-            {
-                if (Percentage > HighConfidenceThreshold)
-                    return HighConfidenceTextColor;
-                else if (Percentage > MediumConfidenceThreshold)
-                    return MediumConfidenceTextColor;
-                else
-                    return LowConfidenceTextColor;
-            }
+            o.SetValue(HighConfidenceForegroundProperty, args.NewValue);
+            SetPercentageForeground(o);
         }
 
         #endregion
 
+        #region DP TextColor Med Confidence
 
-        #region INotifyPropertyChanged Implementation
-
-        public event PropertyChangedEventHandler PropertyChanged;
-        void OnPropertyChanged([CallerMemberName] string propertyName = null)
-            => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        public Brush MediumConfidenceForeground
+        {
+            get => (Brush)GetValue(MediumConfidenceForegroundProperty);
+            set => SetValue(MediumConfidenceForegroundProperty, value);            
+        }
+        public static readonly DependencyProperty MediumConfidenceForegroundProperty =
+            DependencyProperty.Register(nameof(MediumConfidenceForeground), typeof(Brush), typeof(PercentageControl), 
+                new PropertyMetadata(Brushes.Black, new PropertyChangedCallback(MediumConfidenceForegroundPropertyChanged)));
+        static void MediumConfidenceForegroundPropertyChanged(DependencyObject o, DependencyPropertyChangedEventArgs args)
+        {
+            o.SetValue(MediumConfidenceForegroundProperty, args.NewValue);
+            SetPercentageForeground(o);
+        }
 
         #endregion
+
+        #region DP TextColor Low Confidence
+
+        public Brush LowConfidenceForeground
+        {
+            get => (Brush)GetValue(LowConfidenceForegroundProperty);
+            set => SetValue(LowConfidenceForegroundProperty, value);
+        }
+        public static readonly DependencyProperty LowConfidenceForegroundProperty =
+            DependencyProperty.Register(nameof(LowConfidenceForeground), typeof(Brush), typeof(PercentageControl), 
+                new PropertyMetadata(Brushes.Black, new PropertyChangedCallback(LowConfidenceForegroundPropertyChanged)));
+        static void LowConfidenceForegroundPropertyChanged(DependencyObject o, DependencyPropertyChangedEventArgs args)
+        {
+            o.SetValue(LowConfidenceForegroundProperty, args.NewValue);
+            SetPercentageForeground(o);
+        }
+
+        #endregion
+
+        #endregion
+
+        #region Read-Only Properties
+
+        /// <summary>
+        /// The text for the Percentage textblock
+        /// </summary>
+        public string PercentageLabel => (string)GetValue(PercentageLabelProperty);
+        static void SetPercentageLabelValue(DependencyObject o)
+        {
+            var val = (double)o.GetValue(PercentageProperty);
+            var P = val.ToString("P");
+            o.SetValue(PercentageLabelKey, P); // Must use the key to set the value
+        }
+        static readonly DependencyPropertyKey PercentageLabelKey = DependencyProperty.RegisterReadOnly(
+            nameof(PercentageLabel),
+            typeof(string), typeof(PercentageControl),
+            new UIPropertyMetadata(0.0.ToString("P"))
+            );
+        public static readonly DependencyProperty PercentageLabelProperty = PercentageLabelKey.DependencyProperty;
+
+        /// <summary>
+        /// The Background color for the percentage label
+        /// </summary>
+        public Brush PercentageBackground => (Brush)GetValue(PercentageBackgroundProperty);        
+        static void SetPercentageBackground(DependencyObject o)
+        {
+            var percentage = (double)o.GetValue(PercentageProperty);
+
+            Brush brush = (Brush)o.GetValue(LowConfidenceBackgroundProperty);
+            if (percentage > (double)o.GetValue(HighConfidenceThresholdProperty))
+                brush = (Brush)o.GetValue(HighConfidenceBackgroundProperty);
+            else if (percentage > (double)o.GetValue(MediumConfidenceThresholdProperty))
+                brush = (Brush)o.GetValue(MediumConfidenceBackgroundProperty);
+
+            o.SetValue(PercentageBackgroundKey, brush);
+        }
+        static readonly DependencyPropertyKey PercentageBackgroundKey = DependencyProperty.RegisterReadOnly(
+            nameof(PercentageBackground),
+            typeof(Brush), typeof(PercentageControl),
+            new PropertyMetadata(new SolidColorBrush(defaultLowConfidenceBG))
+            );
+        public static readonly DependencyProperty PercentageBackgroundProperty = PercentageBackgroundKey.DependencyProperty;
+
+
+        /// <summary>
+        /// The text color for the percentage label
+        /// </summary>
+        public Brush PercentageForeground => (Brush)GetValue(PercentageLabelTextColorProperty);
+        static void SetPercentageForeground(DependencyObject o)
+        {
+            var percentage = (double)o.GetValue(PercentageProperty);
+
+            Brush brush = (Brush)o.GetValue(LowConfidenceForegroundProperty);
+            if (percentage > (double)o.GetValue(HighConfidenceThresholdProperty))
+                brush = (Brush)o.GetValue(HighConfidenceForegroundProperty);
+            else if (percentage > (double)o.GetValue(MediumConfidenceThresholdProperty))
+                brush = (Brush)o.GetValue(MediumConfidenceForegroundProperty);
+
+            o.SetValue(PercentageLabelForegroundKey, brush);
+        }
+        internal static readonly DependencyPropertyKey PercentageLabelForegroundKey = DependencyProperty.RegisterReadOnly(
+            nameof(PercentageForeground),
+            typeof(Brush), typeof(PercentageControl),
+            new PropertyMetadata(Brushes.Black)
+            );
+        public static readonly DependencyProperty PercentageLabelTextColorProperty = PercentageLabelForegroundKey.DependencyProperty;
+
+        #endregion
+
         
     }
 }
