@@ -38,8 +38,11 @@ namespace Percentage
 
         private void Timer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
         {
-            var i = rand.Next(0, vm.Stocks.Count);
-            vm.Stocks[i].Percentage = rand.NextDouble();
+            if(vm.Stocks.Count > 1)
+            {
+                var i = rand.Next(0, vm.Stocks.Count);
+                vm.Stocks[i].Percentage = rand.NextDouble();
+            }
         }
 
     }

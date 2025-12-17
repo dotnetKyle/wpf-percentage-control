@@ -10,8 +10,8 @@ namespace Percentage
         {
             Stocks = new ObservableCollection<Stock>();
             
-            if(WpfDesignerHelper.Designer.Active)
-            {
+            //if(WpfDesignerHelper.Designer.Active)
+            //{
                 Stocks = new ObservableCollection<Stock>
                 {
                     // Stocks chosen at random
@@ -25,7 +25,7 @@ namespace Percentage
                     new Stock("RDWR ", "Radware Ltd.", .0),
                     new Stock("HURC", "Hurco Companies, Inc.", .0)
                 };
-            }
+            //}
         }
 
         public ObservableCollection<Stock> Stocks { get; set; }
